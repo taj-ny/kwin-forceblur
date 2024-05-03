@@ -21,9 +21,6 @@ const MergedWindowRuleProperties *WindowRuleList::getProperties(EffectWindow *wi
         if (!rule->matches(window))
             continue;
 
-        if (rule->drawImage->enabled) {
-            properties->drawImage = rule->drawImage->value;
-        }
         if (rule->imagePath->enabled) {
             properties->imagePath = rule->imagePath->value;
         }

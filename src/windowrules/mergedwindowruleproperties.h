@@ -8,7 +8,6 @@ namespace KWin
 
 struct MergedWindowRuleProperties
 {
-    bool drawImage = false;
     QString imagePath;
     bool windowOpacityAffectsBlur = false;
     bool blurDecorations = false;

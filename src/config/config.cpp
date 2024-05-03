@@ -56,9 +56,8 @@ void BlurConfig::migrateFrom(int version)
     v1Rule->matchToolbarWindows = true;
     v1Rule->matchContextMenuWindows = forceBlurGroup.readEntry("BlurDocks", false);
 
-    v1Rule->drawImage->enabled = v1Rule->drawImage->value = forceBlurGroup.readEntry("FakeBlur", false);
     v1Rule->imagePath->value = forceBlurGroup.readEntry("FakeBlurImage", "");
-    v1Rule->imagePath->enabled = v1Rule->imagePath->value != "";
+    v1Rule->imagePath->enabled = forceBlurGroup.readEntry("FakeBlur", false);
     v1Rule->windowOpacityAffectsBlur->enabled = v1Rule->windowOpacityAffectsBlur->value = forceBlurGroup.readEntry("TransparentBlur", true);
     v1Rule->blurDecorations->enabled = v1Rule->blurDecorations->value = forceBlurGroup.readEntry("BlurDecorations", false);
     v1Rule->forceBlur->enabled = v1Rule->forceBlur->value = true;
@@ -129,7 +128,6 @@ void BlurConfig::read()
         rule->matchContextMenuWindows = matchingTypeGroup.readEntry("ContextMenu", rule->matchContextMenuWindows);
 
         auto propertiesGroup = ruleGroup.group("Properties");
-        readProperty(propertiesGroup, "DrawImage", rule->drawImage);
         readProperty(propertiesGroup, "ImagePath", rule->imagePath);
         readProperty(propertiesGroup, "WindowOpacityAffectsBlur", rule->windowOpacityAffectsBlur);
         readProperty(propertiesGroup, "BlurDecorations", rule->blurDecorations);
@@ -196,7 +194,6 @@ void BlurConfig::write() const
         matchingTypeGroup.sync();
 
         auto propertiesGroup = ruleGroup.group("Properties");
-        writeProperty(propertiesGroup, "DrawImage", rule->drawImage);
         writeProperty(propertiesGroup, "ImagePath", rule->imagePath);
         writeProperty(propertiesGroup, "WindowOpacityAffectsBlur", rule->windowOpacityAffectsBlur);
         writeProperty(propertiesGroup, "BlurDecorations", rule->blurDecorations);

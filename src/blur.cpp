@@ -479,7 +479,7 @@ void BlurEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std::
 
     const auto windowProperties = m_windowProperties[w];
 
-    bool hasFakeBlur = windowProperties->drawImage && m_textures.contains(windowProperties->imagePath) && !blurArea.isEmpty();
+    bool hasFakeBlur = m_textures.contains(windowProperties->imagePath) && !blurArea.isEmpty();
     if (hasFakeBlur) {
         data.opaque += blurArea;
     }
@@ -797,7 +797,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
     vbo->bindArrays();
 
     const auto windowProperties = m_windowProperties[w];
-    if (windowProperties->drawImage && m_textures.contains(windowProperties->imagePath)) {
+    if (m_textures.contains(windowProperties->imagePath)) {
         ShaderManager::instance()->pushShader(m_texturePass.shader.get());
         m_texturePass.texture = m_textures[windowProperties->imagePath];
 

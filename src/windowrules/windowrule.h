@@ -29,7 +29,6 @@ public:
     bool matchToolbarWindows = false;
     bool matchContextMenuWindows = false;
 
-    WindowRuleProperty<bool> *drawImage = new WindowRuleProperty<bool>(false);
     WindowRuleProperty<QString> *imagePath = new WindowRuleProperty<QString>("");
     WindowRuleProperty<bool> *windowOpacityAffectsBlur = new WindowRuleProperty<bool>(true);
 
