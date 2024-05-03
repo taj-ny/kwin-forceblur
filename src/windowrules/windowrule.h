@@ -19,10 +19,6 @@ public:
 
     bool matchWindowsByClass = false;
     QStringList windowClasses;
-    enum WindowClassMatchingMode {
-        Blacklist,
-        Whitelist
-    };
     bool windowClassWhitelist = true;
 
     bool matchWindowsByType = false;
