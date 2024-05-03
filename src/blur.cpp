@@ -8,7 +8,7 @@
 
 #include "blur.h"
 // KConfigSkeleton
-#include "blurconfig.h"
+#include "config/config.h"
 
 #include "core/pixelgrid.h"
 #include "core/rendertarget.h"
@@ -53,7 +53,6 @@ QTimer *BlurEffect::s_blurManagerRemoveTimer = nullptr;
 
 BlurEffect::BlurEffect()
 {
-    BlurConfig::instance(effects->config());
     ensureResources();
 
     m_downsamplePass.shader = ShaderManager::instance()->generateShaderFromFile(ShaderTrait::MapTexture,
@@ -211,36 +210,30 @@ void BlurEffect::initBlurStrengthValues()
 
 void BlurEffect::reconfigure(ReconfigureFlags flags)
 {
-    BlurConfig::self()->read();
+    BlurConfig::instance()->read();
+    qCCritical(KWIN_BLUR) << BlurConfig::instance()->rules()->rules[0]->windowClasses;
 
-    int blurStrength = BlurConfig::blurStrength() - 1;
+    int blurStrength = BlurConfig::instance()->blurStrength - 1;
     m_iterationCount = blurStrengthValues[blurStrength].iteration;
     m_offset = blurStrengthValues[blurStrength].offset;
     m_expandSize = blurOffsets[m_iterationCount - 1].expandSize;
-    m_noiseStrength = BlurConfig::noiseStrength();
-    m_blurMatching = BlurConfig::blurMatching();
-    m_blurNonMatching = BlurConfig::blurNonMatching();
-    m_blurDecorations = BlurConfig::blurDecorations();
-    m_windowClasses = BlurConfig::windowClasses().split("\n");
-    m_transparentBlur = BlurConfig::transparentBlur();
-    m_topCornerRadius = BlurConfig::topCornerRadius();
-    m_bottomCornerRadius = BlurConfig::bottomCornerRadius();
-    m_roundCornersOfMaximizedWindows = BlurConfig::roundCornersOfMaximizedWindows();
-    m_blurMenus = BlurConfig::blurMenus();
-    m_blurDocks = BlurConfig::blurDocks();
-    m_paintAsTranslucent = BlurConfig::paintAsTranslucent();
-    m_fakeBlur = BlurConfig::fakeBlur();
-    m_fakeBlurImage = BlurConfig::fakeBlurImage();
+    m_noiseStrength = BlurConfig::instance()->noiseStrength;
 
-    QImage fakeBlurImage(m_fakeBlurImage);
-    m_hasValidFakeBlurTexture = !fakeBlurImage.isNull();
-    if (m_hasValidFakeBlurTexture) {
-        m_texturePass.texture = GLTexture::upload(fakeBlurImage);
+    for (auto &texture : m_textures) {
+        delete texture.second;
+    }
+    m_textures.clear();
+    for (const auto &rule : BlurConfig::instance()->rules()->rules) {
+        QImage image(rule->imagePath->value);
+        if (image.isNull())
+            continue;
+
+        m_textures[rule->imagePath->value] = GLTexture::upload(image).release();
     }
 
-    updateCornerRegions();
-
+    m_windowProperties.clear();
     for (EffectWindow *w : effects->stackingOrder()) {
+        m_windowProperties[w] = BlurConfig::instance()->rules()->getProperties(w);
         updateBlurRegion(w);
     }
 
@@ -288,9 +281,9 @@ void BlurEffect::updateBlurRegion(EffectWindow *w)
         frame = decorationBlurRegion(w);
     }
 
-    if (shouldForceBlur(w)) {
+    if (m_windowProperties[w]->forceBlur) {
         content = w->expandedGeometry().toRect().translated(-w->x(), -w->y());
-        if (m_blurDecorations && w->decoration()) {
+        if (m_windowProperties[w]->blurDecorations && w->decoration()) {
             const QMargins borders = w->decoration()->borders();
             frame = w->frameGeometry().toRect().translated(-w->x(), -w->y());
         }
@@ -306,36 +299,6 @@ void BlurEffect::updateBlurRegion(EffectWindow *w)
             m_windows.erase(it);
         }
     }
-}
-
-void BlurEffect::updateCornerRegions()
-{
-    QRegion square = QRegion(0, 0, m_topCornerRadius, m_topCornerRadius);
-    QRegion circle = QRegion(0, 0, 2 * m_topCornerRadius, 2 * m_topCornerRadius, QRegion::RegionType::Ellipse);
-    m_topLeftCorner = QRegion(0, 0, m_topCornerRadius, m_topCornerRadius);
-    m_topRightCorner = QRegion(0, 0, m_topCornerRadius, m_topCornerRadius);
-
-    m_topLeftCorner &= circle;
-    m_topLeftCorner ^= square;
-    circle.translate(-m_topCornerRadius, 0);
-    m_topRightCorner &= circle;
-    m_topRightCorner ^= square;
-
-    square = QRegion(0, 0, m_bottomCornerRadius, m_bottomCornerRadius);
-    circle = QRegion(0, 0, 2 * m_bottomCornerRadius, 2 * m_bottomCornerRadius, QRegion::RegionType::Ellipse);
-
-    m_bottomLeftCorner = QRegion(0, 0, m_bottomCornerRadius, m_bottomCornerRadius);
-    m_bottomRightCorner = QRegion(0, 0, m_bottomCornerRadius, m_bottomCornerRadius);
-    circle.translate(0, -m_bottomCornerRadius);
-    m_bottomLeftCorner &= circle;
-    m_bottomLeftCorner ^= square;
-
-    circle.translate(0, m_bottomCornerRadius);
-    circle.translate(-m_bottomCornerRadius, 0);
-    circle.translate(0, -m_bottomCornerRadius);
-
-    m_bottomRightCorner &= circle;
-    m_bottomRightCorner ^= square;
 }
 
 void BlurEffect::slotWindowAdded(EffectWindow *w)
@@ -363,6 +326,8 @@ void BlurEffect::slotWindowAdded(EffectWindow *w)
     connect(w, &EffectWindow::windowDecorationChanged, this, &BlurEffect::setupDecorationConnections);
     setupDecorationConnections(w);
 
+    m_windowProperties[w] = BlurConfig::instance()->rules()->getProperties(w);
+
     updateBlurRegion(w);
 }
 
@@ -379,6 +344,10 @@ void BlurEffect::slotWindowDeleted(EffectWindow *w)
     if (auto it = windowExpandedGeometryChangedConnections.find(w); it != windowExpandedGeometryChangedConnections.end()) {
         disconnect(*it);
         windowExpandedGeometryChangedConnections.erase(it);
+    }
+    if (auto it = m_windowProperties.find(w); it != m_windowProperties.end()) {
+        delete m_windowProperties[w];
+        m_windowProperties.erase(it);
     }
 }
 
@@ -473,19 +442,21 @@ QRegion BlurEffect::blurRegion(EffectWindow *w, bool noRoundedCorners) const
         }
     }
 
+    const auto windowProperties = m_windowProperties.at(w);
+
     bool isMaximized = effects->clientArea(MaximizeArea, effects->activeScreen(), effects->currentDesktop()) == w->frameGeometry();
-    if (!noRoundedCorners && (!isMaximized || m_roundCornersOfMaximizedWindows)) {
-        if (m_topCornerRadius && (!w->decoration() || (w->decoration() && m_blurDecorations))) {
-            QPoint topRightPosition = QPoint(w->rect().width() - m_topCornerRadius, 0);
-            region -= m_topLeftCorner;
-            region -= m_topRightCorner.translated(topRightPosition);
+    if (!noRoundedCorners && (!isMaximized || windowProperties->roundCornersWhenMaximized)) {
+        if (windowProperties->topCornerRadius && (!w->decoration() || (w->decoration() && windowProperties->blurDecorations))) {
+            QPoint topRightPosition = QPoint(w->rect().width() - windowProperties->topCornerRadius, 0);
+            region -= windowProperties->topLeftCorner;
+            region -= windowProperties->topRightCorner.translated(topRightPosition);
         }
 
-        if (m_bottomCornerRadius) {
-            QPoint bottomLeftPosition = QPoint(0, w->rect().height() - m_bottomCornerRadius);
-            QPoint bottomRightPosition = QPoint(w->rect().width() - m_bottomCornerRadius, w->rect().height() - m_bottomCornerRadius);
-            region -= m_bottomLeftCorner.translated(bottomLeftPosition);
-            region -= m_bottomRightCorner.translated(bottomRightPosition);
+        if (windowProperties->bottomCornerRadius) {
+            QPoint bottomLeftPosition = QPoint(0, w->rect().height() - windowProperties->bottomCornerRadius);
+            QPoint bottomRightPosition = QPoint(w->rect().width() - windowProperties->bottomCornerRadius, w->rect().height() - windowProperties->bottomCornerRadius);
+            region -= windowProperties->bottomLeftCorner.translated(bottomLeftPosition);
+            region -= windowProperties->bottomRightCorner.translated(bottomRightPosition);
         }
     }
 
@@ -508,12 +479,14 @@ void BlurEffect::prePaintWindow(EffectWindow *w, WindowPrePaintData &data, std::
     // in case this window has regions to be blurred
     const QRegion blurArea = blurRegion(w).translated(w->pos().toPoint());
 
-    bool hasFakeBlur = m_fakeBlur && m_hasValidFakeBlurTexture && !blurArea.isEmpty();
+    const auto windowProperties = m_windowProperties[w];
+
+    bool hasFakeBlur = windowProperties->drawImage && m_textures.contains(windowProperties->imagePath) && !blurArea.isEmpty();
     if (hasFakeBlur) {
         data.opaque += blurArea;
     }
 
-    if (shouldForceBlur(w) && m_paintAsTranslucent) {
+    if (windowProperties->forceBlur && windowProperties->paintAsTranslucent) {
         if (hasFakeBlur) {
             // Remove rounded corners region
             data.opaque -= blurRegion(w, true).translated(w->pos().toPoint()) - blurArea;
@@ -580,17 +553,6 @@ bool BlurEffect::shouldBlur(const EffectWindow *w, int mask, const WindowPaintDa
     }
 
     return true;
-}
-
-bool BlurEffect::shouldForceBlur(const EffectWindow *w) const
-{
-    if ((!m_blurDocks && w->isDock()) || (!m_blurMenus && (w->isMenu() || w->isDropdownMenu() || w->isPopupMenu() || w->isPopupWindow()))) {
-        return false;
-    }
-
-    bool matches = m_windowClasses.contains(w->window()->resourceName())
-        || m_windowClasses.contains(w->window()->resourceClass());
-    return (matches && m_blurMatching) || (!matches && m_blurNonMatching);
 }
 
 void BlurEffect::drawWindow(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const QRegion &region, WindowPaintData &data)
@@ -669,7 +631,7 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
     const QRect backgroundRect = blurShape.boundingRect();
     const QRect deviceBackgroundRect = snapToPixelGrid(scaledRect(backgroundRect, viewport.scale()));
-    const auto opacity = m_transparentBlur
+    const auto opacity = m_windowProperties[w]->windowOpacityAffectsBlur
         ? w->opacity() * data.opacity()
         : data.opacity();
 
@@ -836,17 +798,19 @@ void BlurEffect::blur(const RenderTarget &renderTarget, const RenderViewport &vi
 
     vbo->bindArrays();
 
-    if (m_fakeBlur && m_hasValidFakeBlurTexture) {
+    const auto windowProperties = m_windowProperties[w];
+    if (windowProperties->drawImage && m_textures.contains(windowProperties->imagePath)) {
         ShaderManager::instance()->pushShader(m_texturePass.shader.get());
+        m_texturePass.texture = m_textures[windowProperties->imagePath];
 
         QMatrix4x4 projectionMatrix = data.projectionMatrix();
         projectionMatrix.translate(deviceBackgroundRect.x(), deviceBackgroundRect.y());
 
         m_texturePass.shader->setUniform(m_texturePass.mvpMatrixLocation, projectionMatrix);
-        m_texturePass.shader->setUniform(m_texturePass.textureSizeLocation, QVector2D(m_texturePass.texture.get()->width(), m_texturePass.texture.get()->height()));
+        m_texturePass.shader->setUniform(m_texturePass.textureSizeLocation, QVector2D(m_texturePass.texture->width(), m_texturePass.texture->height()));
         m_texturePass.shader->setUniform(m_texturePass.texStartPosLocation, QVector2D(0, 0));
 
-        m_texturePass.texture.get()->bind();
+        m_texturePass.texture->bind();
 
         glEnable(GL_BLEND);
         float o = 1.0f - (opacity);
@@ -983,11 +947,6 @@ bool BlurEffect::isActive() const
 bool BlurEffect::blocksDirectScanout() const
 {
     return false;
-}
-
-bool BlurEffect::hasFakeBlur(EffectWindow *w) const
-{
-    return m_fakeBlur && m_hasValidFakeBlurTexture && !blurRegion(w).isEmpty();
 }
 
 } // namespace KWin

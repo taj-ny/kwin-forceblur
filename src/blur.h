@@ -10,6 +10,7 @@
 #include "effect/effect.h"
 #include "opengl/glutils.h"
 #include "window.h"
+#include "windowrules/mergedwindowruleproperties.h"
 
 #include <QList>
 
@@ -81,12 +82,9 @@ private:
     QRegion decorationBlurRegion(const EffectWindow *w) const;
     bool decorationSupportsBlurBehind(const EffectWindow *w) const;
     bool shouldBlur(const EffectWindow *w, int mask, const WindowPaintData &data) const;
-    bool shouldForceBlur(const EffectWindow *w) const;
     void updateBlurRegion(EffectWindow *w);
-    void updateCornerRegions();
     void blur(const RenderTarget &renderTarget, const RenderViewport &viewport, EffectWindow *w, int mask, const QRegion &region, WindowPaintData &data);
     GLTexture *ensureNoiseTexture();
-    bool hasFakeBlur(EffectWindow *w) const;
 
 private:
     struct
@@ -124,7 +122,7 @@ private:
         int textureSizeLocation;
         int texStartPosLocation;
 
-        std::unique_ptr<GLTexture> texture;
+        GLTexture *texture;
     } m_texturePass;
 
     bool m_valid = false;
@@ -137,27 +135,6 @@ private:
     int m_offset;
     int m_expandSize;
     int m_noiseStrength;
-    QStringList m_windowClasses;
-    bool m_blurMatching;
-    bool m_blurNonMatching;
-    bool m_blurDecorations;
-    bool m_transparentBlur;
-    int m_topCornerRadius;
-    int m_bottomCornerRadius;
-    bool m_roundCornersOfMaximizedWindows;
-    bool m_blurMenus;
-    bool m_blurDocks;
-    bool m_paintAsTranslucent;
-    bool m_fakeBlur;
-    QString m_fakeBlurImage;
-
-    bool m_hasValidFakeBlurTexture;
-
-    // Regions to subtract from the blurred region
-    QRegion m_topLeftCorner;
-    QRegion m_topRightCorner;
-    QRegion m_bottomLeftCorner;
-    QRegion m_bottomRightCorner;
 
     struct OffsetStruct
     {
@@ -176,9 +153,12 @@ private:
 
     QList<BlurValuesStruct> blurStrengthValues;
 
+    std::map<QString, GLTexture*> m_textures;
+
     QMap<EffectWindow *, QMetaObject::Connection> windowBlurChangedConnections;
     QMap<EffectWindow *, QMetaObject::Connection> windowExpandedGeometryChangedConnections;
     std::unordered_map<EffectWindow *, BlurEffectData> m_windows;
+    std::map<EffectWindow*, const MergedWindowRuleProperties*> m_windowProperties;
 
     static BlurManagerInterface *s_blurManager;
     static QTimer *s_blurManagerRemoveTimer;
