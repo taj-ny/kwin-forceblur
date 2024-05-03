@@ -14,8 +14,8 @@ struct MergedWindowRuleProperties
     bool blurDecorations = false;
     bool forceBlur = false;
     bool paintAsTranslucent = false;
-    bool topCornerRadius = false;
-    bool bottomCornerRadius = false;
+    int topCornerRadius = false;
+    int bottomCornerRadius = false;
     bool roundCornersWhenMaximized = false;
 
     QRegion topLeftCorner;

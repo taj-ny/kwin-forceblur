@@ -33,7 +33,6 @@ public:
     bool matchToolbarWindows = false;
     bool matchContextMenuWindows = false;
 
-
     WindowRuleProperty<bool> *drawImage = new WindowRuleProperty<bool>(false);
     WindowRuleProperty<QString> *imagePath = new WindowRuleProperty<QString>("");
     WindowRuleProperty<bool> *windowOpacityAffectsBlur = new WindowRuleProperty<bool>(true);
@@ -47,9 +46,6 @@ public:
     WindowRuleProperty<bool> *roundCornersWhenMaximized = new WindowRuleProperty<bool>(false);
 
     bool matches(EffectWindow *w);
-
-private:
-
 };
 
 }

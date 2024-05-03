@@ -48,35 +48,35 @@ const MergedWindowRuleProperties *WindowRuleList::getProperties(EffectWindow *wi
         if (rule->roundCornersWhenMaximized->enabled) {
             properties->roundCornersWhenMaximized = rule->roundCornersWhenMaximized->value;
         }
+    }
 
-        if (rule->topCornerRadius->enabled || rule->bottomCornerRadius->enabled) {
-            QRegion square = QRegion(0, 0, rule->topCornerRadius->value, rule->topCornerRadius->value);
-            QRegion circle = QRegion(0, 0, 2 * rule->topCornerRadius->value, 2 * rule->topCornerRadius->value, QRegion::RegionType::Ellipse);
-            properties->topLeftCorner = QRegion(0, 0, rule->topCornerRadius->value, rule->topCornerRadius->value);
-            properties->topRightCorner = QRegion(0, 0, rule->topCornerRadius->value, rule->topCornerRadius->value);
+    if (properties->topCornerRadius || properties->bottomCornerRadius) {
+        QRegion square = QRegion(0, 0, properties->topCornerRadius, properties->topCornerRadius);
+        QRegion circle = QRegion(0, 0, 2 * properties->topCornerRadius, 2 * properties->topCornerRadius, QRegion::RegionType::Ellipse);
+        properties->topLeftCorner = QRegion(0, 0, properties->topCornerRadius, properties->topCornerRadius);
+        properties->topRightCorner = QRegion(0, 0, properties->topCornerRadius, properties->topCornerRadius);
 
-            properties->topLeftCorner &= circle;
-            properties->topLeftCorner ^= square;
-            circle.translate(-rule->topCornerRadius->value, 0);
-            properties->topRightCorner &= circle;
-            properties->topRightCorner ^= square;
+        properties->topLeftCorner &= circle;
+        properties->topLeftCorner ^= square;
+        circle.translate(-properties->topCornerRadius, 0);
+        properties->topRightCorner &= circle;
+        properties->topRightCorner ^= square;
 
-            square = QRegion(0, 0, rule->bottomCornerRadius->value, rule->bottomCornerRadius->value);
-            circle = QRegion(0, 0, 2 * rule->bottomCornerRadius->value, 2 * rule->bottomCornerRadius->value, QRegion::RegionType::Ellipse);
+        square = QRegion(0, 0, properties->bottomCornerRadius, properties->bottomCornerRadius);
+        circle = QRegion(0, 0, 2 * properties->bottomCornerRadius, 2 * properties->bottomCornerRadius, QRegion::RegionType::Ellipse);
 
-            properties->bottomLeftCorner = QRegion(0, 0, rule->bottomCornerRadius->value, rule->bottomCornerRadius->value);
-            properties->bottomRightCorner = QRegion(0, 0, rule->bottomCornerRadius->value, rule->bottomCornerRadius->value);
-            circle.translate(0, -rule->bottomCornerRadius->value);
-            properties->bottomLeftCorner &= circle;
-            properties->bottomLeftCorner ^= square;
+        properties->bottomLeftCorner = QRegion(0, 0, properties->bottomCornerRadius, properties->bottomCornerRadius);
+        properties->bottomRightCorner = QRegion(0, 0, properties->bottomCornerRadius, properties->bottomCornerRadius);
+        circle.translate(0, -properties->bottomCornerRadius);
+        properties->bottomLeftCorner &= circle;
+        properties->bottomLeftCorner ^= square;
 
-            circle.translate(0, rule->bottomCornerRadius->value);
-            circle.translate(-rule->bottomCornerRadius->value, 0);
-            circle.translate(0, -rule->bottomCornerRadius->value);
+        circle.translate(0, properties->bottomCornerRadius);
+        circle.translate(-properties->bottomCornerRadius, 0);
+        circle.translate(0, -properties->bottomCornerRadius);
 
-            properties->bottomRightCorner &= circle;
-            properties->bottomRightCorner ^= square;
-        }
+        properties->bottomRightCorner &= circle;
+        properties->bottomRightCorner ^= square;
     }
 
     return properties;

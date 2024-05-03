@@ -211,7 +211,6 @@ void BlurEffect::initBlurStrengthValues()
 void BlurEffect::reconfigure(ReconfigureFlags flags)
 {
     BlurConfig::instance()->read();
-    qCCritical(KWIN_BLUR) << BlurConfig::instance()->rules()->rules[0]->windowClasses;
 
     int blurStrength = BlurConfig::instance()->blurStrength - 1;
     m_iterationCount = blurStrengthValues[blurStrength].iteration;
