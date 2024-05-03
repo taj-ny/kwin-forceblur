@@ -21,6 +21,8 @@ BlurEffectConfig::BlurEffectConfig(QObject *parent, const KPluginMetaData &data)
     : KCModule(parent, data)
 {
     ui.setupUi(widget());
+
+    ui.rulesTable->horizontalHeader()->setStretchLastSection(true);
 }
 
 BlurEffectConfig::~BlurEffectConfig()

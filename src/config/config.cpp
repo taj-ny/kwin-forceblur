@@ -62,10 +62,8 @@ void BlurConfig::migrateFrom(int version)
     v1Rule->blurDecorations->enabled = v1Rule->blurDecorations->value = forceBlurGroup.readEntry("BlurDecorations", false);
     v1Rule->forceBlur->enabled = v1Rule->forceBlur->value = true;
     v1Rule->paintAsTranslucent->enabled = v1Rule->paintAsTranslucent->value = forceBlurGroup.readEntry("PaintAsTranslucent", false);
-    v1Rule->topCornerRadius->value = forceBlurGroup.readEntry("TopCornerRadius", 0);
-    v1Rule->topCornerRadius->enabled = v1Rule->topCornerRadius->value != 0;
-    v1Rule->bottomCornerRadius->value = forceBlurGroup.readEntry("BottomCornerRadius", 0);
-    v1Rule->bottomCornerRadius->enabled = v1Rule->bottomCornerRadius->value != 0;
+    v1Rule->topCornerRadius->enabled = v1Rule->topCornerRadius->value = forceBlurGroup.readEntry("TopCornerRadius", 0);
+    v1Rule->bottomCornerRadius->enabled = v1Rule->bottomCornerRadius->value = forceBlurGroup.readEntry("BottomCornerRadius", 0);
     v1Rule->roundCornersWhenMaximized->enabled = v1Rule->roundCornersWhenMaximized->value = forceBlurGroup.readEntry("RoundCornersOfMaximizedWindows", false);
 
     m_rules->rules.insert(m_rules->rules.begin(), v1Rule);
