@@ -113,7 +113,7 @@ void BlurConfig::read()
 
         auto matchingClassGroup = matchingGroup.group("Class");
         rule->matchWindowsByClass = matchingClassGroup.readEntry("Enable", rule->matchWindowsByClass);
-        rule->windowClasses = matchingClassGroup.readEntry("Classes", "").split("\n");
+        rule->windowClasses = matchingClassGroup.readEntry("Classes", rule->windowClasses);
         rule->windowClassWhitelist = matchingClassGroup.readEntry("Mode", rule->windowClassWhitelist);
 
         auto matchingTypeGroup = matchingGroup.group("Type");
