@@ -6,7 +6,9 @@ namespace KWin
 
 bool WindowRule::matches(EffectWindow *w)
 {
-    if (matchAllWindows) {
+    if (!enabled) {
+        return false;
+    } else if (matchAllWindows) {
         return true;
     }
 
