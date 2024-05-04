@@ -4,10 +4,9 @@ set(forceblur_SOURCES
     blur.cpp
     blur.qrc
     main.cpp
-)
-
-kconfig_add_kcfg_files(forceblur_SOURCES
-    blurconfig.kcfgc
+    config/config.cpp
+    windowrules/windowrule.cpp
+    windowrules/windowrulelist.cpp
 )
 
 add_library(forceblur MODULE ${forceblur_SOURCES})

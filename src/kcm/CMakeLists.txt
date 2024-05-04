@@ -1,7 +1,14 @@
-set(kwin_forceblur_config_SRCS blur_config.cpp blur_config.h)
+set(kwin_forceblur_config_SRCS
+    blur_config.cpp
+    blur_config.h
+    ../config/config.cpp
+    ../windowrules/windowrule.cpp
+    ../windowrules/windowrulelist.cpp
+)
+
+include_directories(..)
 
 ki18n_wrap_ui(kwin_forceblur_config_SRCS blur_config.ui)
-kconfig_add_kcfg_files(kwin_forceblur_config_SRCS ../blurconfig.kcfgc)
 
 qt_add_dbus_interface(kwin_forceblur_config_SRCS ${KWIN_EFFECTS_INTERFACE} kwineffects_interface)
 
@@ -10,6 +17,7 @@ target_link_libraries(kwin_forceblur_config
     KF6::KCMUtils
     KF6::CoreAddons
     KF6::I18n
+    KWin::kwin
     Qt6::DBus
 )
 
