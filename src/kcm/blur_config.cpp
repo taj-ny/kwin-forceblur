@@ -11,6 +11,7 @@
 // KConfigSkeleton
 
 #include <KPluginFactory>
+#include <QAbstractItemView>
 #include <QCheckBox>
 #include <QLabel>
 #include "kwineffects_interface.h"
@@ -27,12 +28,18 @@ BlurEffectConfig::BlurEffectConfig(QObject *parent, const KPluginMetaData &data)
     BlurConfig::instance()->read();
 
     ui.rulesTable->horizontalHeader()->setStretchLastSection(true);
+    ui.rulesTable->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui.rulesTable->setSelectionMode(QAbstractItemView::SingleSelection);
     ui.rulesTable->setRowCount(BlurConfig::instance()->rules()->rules.size());
-    int row = 0;
 
+    int row = 0;
     for (const auto &rule : BlurConfig::instance()->rules()->rules) {
         auto checkBox = new QCheckBox();
         checkBox->setChecked(rule->enabled);
+        connect(checkBox, &QCheckBox::checkStateChanged, [=](const Qt::CheckState &checkState) {
+            rule->enabled = checkState == Qt::CheckState::Checked;
+            markAsChanged();
+        });
 
         ui.rulesTable->setCellWidget(row, 0, checkBox);
         ui.rulesTable->setCellWidget(row, 1, new QLabel(rule->name));
@@ -47,6 +54,7 @@ BlurEffectConfig::~BlurEffectConfig()
 void BlurEffectConfig::save()
 {
     KCModule::save();
+    BlurConfig::instance()->write();
 
     OrgKdeKwinEffectsInterface interface(QStringLiteral("org.kde.KWin"),
                                          QStringLiteral("/Effects"),
