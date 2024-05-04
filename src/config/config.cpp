@@ -45,7 +45,7 @@ void BlurConfig::migrateFrom(int version)
 
     v1Rule->name = "v1 configuration";
     v1Rule->matchWindowsByClass = true;
-    v1Rule->windowClasses = forceBlurGroup.readEntry("WindowClasses", QString("class1\nclass2\nclass3").split("\n"));
+    v1Rule->windowClasses = forceBlurGroup.readEntry("WindowClasses", "").split("\n");
     v1Rule->windowClassWhitelist = forceBlurGroup.readEntry("BlurMatching", true);
 
     v1Rule->matchWindowsByType = true;
